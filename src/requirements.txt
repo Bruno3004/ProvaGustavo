@@ -1,0 +1,10 @@
+pandas
+kafka-python
+minio
+fastapi
+uvicorn
+requests
+numpy
+matplotlib
+seaborn
+psycopg2-binary
