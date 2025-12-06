@@ -1,11 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
-from storage.minio_client import MinIOClient
-from data_processing.spark_processor import CarDataProcessor
 import sys
 import os
+
+# Definir caminho base do projeto
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATASETS_DIR = os.path.join(BASE_DIR, 'datasets')
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from storage.minio_client import MinIOClient
+from data_processing.spark_processor import CarDataProcessor
 
 app = FastAPI(title="Car Inventory API", version="1.0.0")
 
@@ -37,7 +43,7 @@ def get_kpis():
 def get_inventory_by_brand():
     """Retorna estoque agrupado por marca"""
     try:
-        df = pd.read_csv('../../datasets/car_inventory.csv')
+        df = pd.read_csv(os.path.join(DATASETS_DIR, 'car_inventory.csv'))
         result = df.groupby('marca').agg({
             'id': 'count',
             'preco': 'mean'
@@ -50,7 +56,7 @@ def get_inventory_by_brand():
 def get_available_inventory():
     """Retorna veículos disponíveis"""
     try:
-        df = pd.read_csv('../../datasets/car_inventory.csv')
+        df = pd.read_csv(os.path.join(DATASETS_DIR, 'car_inventory.csv'))
         available = df[df['status'] == 'Disponível']
         return available.to_dict('records')
     except Exception as e:
@@ -60,7 +66,7 @@ def get_available_inventory():
 def get_sales_summary():
     """Retorna resumo de vendas"""
     try:
-        df = pd.read_csv('../../datasets/sales_data.csv')
+        df = pd.read_csv(os.path.join(DATASETS_DIR, 'sales_data.csv'))
         summary = {
             'total_vendas': len(df),
             'valor_total': df['preco_venda'].sum(),
@@ -75,7 +81,7 @@ def get_sales_summary():
 def get_price_distribution():
     """Retorna distribuição de preços"""
     try:
-        df = pd.read_csv('../../datasets/car_inventory.csv')
+        df = pd.read_csv(os.path.join(DATASETS_DIR, 'car_inventory.csv'))
         bins = [0, 30000, 50000, 80000, float('inf')]
         labels = ['Até 30k', '30k-50k', '50k-80k', 'Acima 80k']
         df['faixa_preco'] = pd.cut(df['preco'], bins=bins, labels=labels)
