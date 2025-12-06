@@ -1,0 +1,494 @@
+================================================================================
+        SISTEMA DE GERENCIAMENTO DE ESTOQUE - LOJA DE CARROS
+                    DOCUMENTAÇÃO TÉCNICA COMPLETA
+================================================================================
+
+================================================================================
+1. DESCRIÇÃO DO PROBLEMA
+================================================================================
+
+Lojas de carros enfrentam desafios significativos no gerenciamento de estoque:
+
+• Dificuldade em rastrear veículos disponíveis em tempo real
+• Falta de visibilidade sobre rotatividade de estoque
+• Análise manual de preços e tendências de mercado
+• Ausência de KPIs consolidados para tomada de decisão
+• Processos manuais propensos a erros
+
+Este projeto aborda esses problemas através de um sistema automatizado de 
+análise de dados que integra ingestão, processamento, armazenamento e 
+visualização de informações de estoque.
+
+================================================================================
+2. OBJETIVOS DO SISTEMA E JUSTIFICATIVA TÉCNICA
+================================================================================
+
+2.1 OBJETIVOS
+-------------
+• Automatizar a coleta e processamento de dados de estoque
+• Fornecer KPIs em tempo real para gestão de estoque
+• Implementar pipeline escalável de dados
+• Criar dashboards interativos para análise
+• Estabelecer arquitetura de Data Lake com camadas Bronze/Silver/Gold
+
+2.2 JUSTIFICATIVA TÉCNICA
+--------------------------
+A arquitetura escolhida permite processamento tanto em tempo real (streaming) 
+quanto batch, garantindo flexibilidade e escalabilidade. O uso de Data Lake 
+com camadas permite rastreabilidade completa dos dados desde a origem até os 
+KPIs finais.
+
+================================================================================
+3. ESCOPO DA SOLUÇÃO
+================================================================================
+
+3.1 O QUE ESTÁ INCLUÍDO
+------------------------
+• Pipeline completo de ingestão de dados (streaming e batch)
+• Processamento distribuído com Apache Spark
+• Data Lake com 3 camadas (Bronze, Silver, Gold)
+• API REST para acesso aos dados
+• Dashboards no Metabase
+• Geração de dados sintéticos para testes
+• Infraestrutura containerizada com Docker
+
+3.2 O QUE NÃO ESTÁ INCLUÍDO
+----------------------------
+• Integração com sistemas ERP externos
+• Módulo de Machine Learning para previsão de demanda
+• Sistema de autenticação e autorização completo
+• Backup automatizado e disaster recovery
+• Monitoramento e alertas avançados
+
+================================================================================
+4. ARQUITETURA COMPLETA DO PIPELINE
+================================================================================
+
+O sistema implementa uma arquitetura moderna de Data Lake com processamento 
+em múltiplas camadas.
+
+4.1 COMPONENTES PRINCIPAIS
+---------------------------
+
+CAMADA DE INGESTÃO
+• Apache Kafka: Streaming de dados em tempo real
+  - Tópicos: car_inventory, car_sales
+  - Producer/Consumer para processamento contínuo
+• Apache Airflow: Processamento batch agendado
+
+CAMADA DE PROCESSAMENTO
+• Apache Spark: Processamento distribuído
+  - Transformações de dados
+  - Agregações e cálculos de KPIs
+• Pandas: Processamento local para análises exploratórias
+
+CAMADA DE ARMAZENAMENTO (DATA LAKE)
+• MinIO (S3-compatible):
+  - Bronze: Dados brutos em JSON
+  - Silver: Dados limpos e estruturados em Parquet
+  - Gold: Dados agregados e KPIs em Parquet
+• PostgreSQL: Dados relacionais para Metabase
+
+CAMADA DE VISUALIZAÇÃO
+• Metabase: Dashboards e relatórios interativos
+• FastAPI: API REST com documentação automática
+
+4.2 FLUXO DE DADOS
+------------------
+1. Dados fonte → Kafka Producer
+2. Kafka Consumer → MinIO (Bronze Layer)
+3. Spark Processing → Limpeza e transformação
+4. MinIO (Silver Layer) → Dados estruturados
+5. Spark Aggregation → Cálculo de KPIs
+6. MinIO (Gold Layer) → Dados analíticos
+7. API + Metabase → Visualização
+
+================================================================================
+5. DETALHES DAS FERRAMENTAS E TECNOLOGIAS
+================================================================================
+
+TECNOLOGIA          VERSÃO      PROPÓSITO
+--------------------------------------------------------------------------------
+Apache Kafka        7.5.0       Streaming de dados em tempo real
+Apache Spark        3.4.0       Processamento distribuído
+MinIO               latest      Data Lake (S3-compatible)
+PostgreSQL          13          Banco de dados relacional
+Metabase            latest      Dashboards e visualização
+FastAPI             latest      API REST
+Docker Compose      3.8         Orquestração de containers
+Python              3.8+        Linguagem principal
+Pandas              latest      Manipulação de dados
+Kafka-Python        latest      Cliente Kafka para Python
+NumPy               latest      Computação numérica
+Matplotlib          latest      Visualização de dados
+Seaborn             latest      Visualização estatística
+Psycopg2-binary     latest      Cliente PostgreSQL
+
+================================================================================
+6. DECISÕES TÉCNICAS E TRADE-OFFS
+================================================================================
+
+6.1 KAFKA VS RABBITMQ
+---------------------
+Decisão: Apache Kafka
+Justificativa: Melhor para streaming de alto volume, persistência de mensagens, 
+replay de eventos
+Trade-off: Maior complexidade de configuração
+
+6.2 MINIO VS HDFS
+-----------------
+Decisão: MinIO
+Justificativa: Compatibilidade S3, mais leve, fácil de containerizar
+Trade-off: Menos recursos para clusters massivos
+
+6.3 METABASE VS GRAFANA
+------------------------
+Decisão: Metabase
+Justificativa: Interface mais amigável, melhor para análise de negócio
+Trade-off: Menos customizável que Grafana
+
+6.4 FORMATO PARQUET VS CSV
+---------------------------
+Decisão: Parquet para Silver/Gold
+Justificativa: Compressão eficiente, leitura colunar, melhor performance
+Trade-off: Não é human-readable
+
+6.5 DOCKER COMPOSE VS KUBERNETES
+---------------------------------
+Decisão: Docker Compose
+Justificativa: Simplicidade para ambiente de desenvolvimento/demonstração
+Trade-off: Não é adequado para produção em larga escala
+
+================================================================================
+7. GUIA DE EXECUÇÃO - COMO RODAR DO ZERO
+================================================================================
+
+7.1 PRÉ-REQUISITOS
+------------------
+• Docker Desktop instalado e rodando
+• Python 3.8 ou superior
+• Git (opcional)
+• Mínimo 8GB RAM disponível
+• 20GB de espaço em disco
+
+7.2 PASSO A PASSO
+-----------------
+
+PASSO 1: Clonar/Baixar o projeto
+    cd ProvaGustavo
+
+PASSO 2: Instalar dependências Python
+    cd src
+    pip install -r requirements.txt
+
+PASSO 3: Subir infraestrutura Docker
+    cd ../infra
+    docker-compose up -d
+
+PASSO 4: Aguardar inicialização (2-3 minutos)
+    docker-compose ps
+
+PASSO 5: Gerar dados de exemplo
+    cd ../datasets
+    python sample_data.py
+
+PASSO 6: Executar pipeline
+    cd ../src
+    python main.py
+
+PASSO 7: Acessar serviços
+    • MinIO: http://localhost:9001 (admin/password123)
+    • Metabase: http://localhost:3000
+    • API: http://localhost:8000/docs
+
+7.3 COMANDOS ÚTEIS
+------------------
+# Ver logs dos containers
+docker-compose logs -f
+
+# Parar todos os serviços
+docker-compose down
+
+# Reiniciar um serviço específico
+docker-compose restart metabase
+
+# Limpar volumes (CUIDADO: apaga dados)
+docker-compose down -v
+
+================================================================================
+8. GUIA DE DEPENDÊNCIAS
+================================================================================
+
+8.1 DEPENDÊNCIAS PYTHON
+------------------------
+• pandas - Manipulação de dados
+• kafka-python - Cliente Kafka
+• minio - Cliente MinIO/S3
+• fastapi - Framework API
+• uvicorn - Servidor ASGI
+• requests - Cliente HTTP
+• numpy - Computação numérica
+• matplotlib - Visualização
+• seaborn - Visualização estatística
+• psycopg2-binary - Cliente PostgreSQL
+
+8.2 SERVIÇOS DOCKER
+--------------------
+• MinIO: minio/minio:latest
+• Kafka: confluentinc/cp-kafka:7.5.0
+• Zookeeper: confluentinc/cp-zookeeper:7.5.0
+• PostgreSQL: postgres:13
+• Metabase: metabase/metabase:latest
+• Spark Master: apache/spark:3.4.0
+• Spark Worker: apache/spark:3.4.0
+
+8.3 PORTAS UTILIZADAS
+----------------------
+• 9000, 9001: MinIO (API e Console)
+• 9092: Kafka
+• 2181: Zookeeper
+• 5432: PostgreSQL
+• 3000: Metabase
+• 8080, 7077: Spark (UI e Master)
+• 8000: FastAPI
+
+================================================================================
+9. DESCRIÇÃO DOS DADOS
+================================================================================
+
+9.1 ORIGEM DOS DADOS
+--------------------
+Os dados são gerados sinteticamente através do script sample_data.py, 
+simulando um ambiente real de loja de carros com 1000 veículos e 200 vendas.
+
+9.2 FORMATO DOS DADOS
+---------------------
+• Bronze Layer: JSON (dados brutos)
+• Silver Layer: Parquet (dados limpos)
+• Gold Layer: Parquet (dados agregados)
+• CSV: Dados de entrada iniciais
+
+9.3 ESQUEMA - car_inventory.csv
+--------------------------------
+CAMPO            TIPO        DESCRIÇÃO
+--------------------------------------------------------------------------------
+id               String      Identificador único (CAR0001)
+marca            String      Marca do veículo
+modelo           String      Modelo do veículo
+ano              Integer     Ano de fabricação (2020-2024)
+cor              String      Cor do veículo
+preco            Integer     Preço em reais (25000-80000)
+quilometragem    Integer     Quilometragem (0-100000)
+status           String      Disponível/Vendido/Reservado
+data_entrada     Date        Data de entrada no estoque
+vendedor_id      String      ID do vendedor (VEND01-VEND10)
+categoria        String      Sedan/SUV/Hatchback/Pickup
+
+9.4 ESQUEMA - sales_data.csv
+-----------------------------
+CAMPO              TIPO        DESCRIÇÃO
+--------------------------------------------------------------------------------
+venda_id           String      ID da venda (SALE0001)
+car_id             String      ID do carro vendido
+data_venda         Date        Data da venda
+preco_venda        Float       Preço final de venda
+vendedor_id        String      ID do vendedor
+cliente_id         String      ID do cliente (CLI001-CLI500)
+forma_pagamento    String      À vista/Financiado/Consórcio
+
+9.5 DICIONÁRIO DE DADOS
+------------------------
+• Marcas: Toyota, Honda, Ford, Chevrolet, Volkswagen, Hyundai, Nissan
+• Status: Disponível (60%), Vendido (30%), Reservado (10%)
+• Categorias: Sedan, SUV, Hatchback, Pickup
+• Cores: Branco, Preto, Prata, Azul, Vermelho, Cinza
+• Formas de Pagamento: À vista, Financiado, Consórcio
+
+================================================================================
+10. KPIs IMPLEMENTADOS
+================================================================================
+
+10.1 KPIs DE ESTOQUE
+--------------------
+• Total de Veículos: Quantidade total no estoque
+• Valor Total do Estoque: Soma dos preços de todos os veículos
+• Preço Médio: Preço médio dos veículos em estoque
+• Taxa de Disponibilidade: % de veículos disponíveis para venda
+• Idade Média da Frota: Idade média dos veículos em anos
+
+10.2 KPIs DE VENDAS
+-------------------
+• Total de Vendas: Número total de vendas realizadas
+• Receita Total: Valor total das vendas
+• Ticket Médio: Valor médio por venda
+• Taxa de Conversão: % de veículos vendidos vs. estoque total
+• Tempo Médio de Venda: Dias entre entrada e venda
+
+10.3 ANÁLISES DISPONÍVEIS
+--------------------------
+• Estoque por marca e modelo
+• Vendas por período
+• Distribuição de preços
+• Rotatividade por categoria
+• Performance por vendedor
+• Análise de margem de lucro
+
+10.4 ENDPOINTS DA API
+---------------------
+• GET /kpis - KPIs principais
+• GET /inventory/by-brand - Estoque por marca
+• GET /inventory/available - Veículos disponíveis
+• GET /sales/summary - Resumo de vendas
+• GET /analytics/price-distribution - Distribuição de preços
+
+Exemplo de resposta:
+{
+  "total_veiculos": 1000,
+  "valor_total_estoque": 45000000.00,
+  "preco_medio": 45000.00,
+  "veiculos_disponiveis": 600,
+  "marcas_ativas": 7,
+  "idade_media_frota": 2.3
+}
+
+================================================================================
+11. PONTOS DE FALHA E LIMITAÇÕES
+================================================================================
+
+11.1 PONTOS DE FALHA
+--------------------
+• Kafka: Se o broker cair, streaming para
+• MinIO: Perda de dados se volumes não persistidos
+• Spark: Falhas em processamento de grandes volumes
+• Docker: Recursos insuficientes podem derrubar containers
+• Rede: Comunicação entre containers pode falhar
+• PostgreSQL: Single point of failure sem replicação
+
+11.2 LIMITAÇÕES
+---------------
+• Escalabilidade: Docker Compose não é para produção
+• Segurança: Senhas hardcoded, sem SSL/TLS
+• Monitoramento: Ausência de logs centralizados
+• Backup: Sem estratégia de backup automatizado
+• Alta Disponibilidade: Single point of failure
+• Performance: Dados sintéticos, não testado em escala real
+• Integração: Não conecta com sistemas externos
+• Autenticação: Sem controle de acesso granular
+• Validação: Validação básica de dados
+
+11.3 MELHORIAS FUTURAS
+----------------------
+• Migrar para Kubernetes para produção
+• Implementar autenticação e autorização (OAuth2/JWT)
+• Adicionar monitoramento com Prometheus/Grafana
+• Implementar CI/CD pipeline
+• Adicionar testes automatizados (unitários e integração)
+• Implementar ML para previsão de demanda
+• Adicionar cache com Redis
+• Implementar data quality checks
+• Adicionar versionamento de dados
+• Implementar data lineage tracking
+
+================================================================================
+12. TRABALHO INDIVIDUAL DOS INTEGRANTES
+================================================================================
+
+Nota: Esta seção deve ser preenchida com as responsabilidades específicas 
+de cada membro da equipe.
+
+INTEGRANTE 1: [Nome]
+--------------------
+Responsabilidades:
+• Desenvolvimento da camada de ingestão (Kafka)
+• Configuração do Docker Compose
+• Implementação dos producers/consumers
+• Testes de streaming de dados
+
+INTEGRANTE 2: [Nome]
+--------------------
+Responsabilidades:
+• Desenvolvimento do processamento Spark
+• Implementação das transformações de dados
+• Criação das camadas Silver e Gold
+• Otimização de performance
+
+INTEGRANTE 3: [Nome]
+--------------------
+Responsabilidades:
+• Desenvolvimento da API FastAPI
+• Integração com MinIO
+• Documentação de endpoints
+• Implementação de validações
+
+INTEGRANTE 4: [Nome]
+--------------------
+Responsabilidades:
+• Configuração do Metabase
+• Criação de dashboards
+• Definição de KPIs
+• Relatórios executivos
+
+INTEGRANTE 5: [Nome]
+--------------------
+Responsabilidades:
+• Geração de dados sintéticos
+• Testes e validação
+• Documentação técnica
+• Guias de instalação
+
+================================================================================
+13. TROUBLESHOOTING
+================================================================================
+
+PROBLEMA: Porta já em uso
+--------------------------
+Solução:
+    netstat -ano | findstr :9000
+    taskkill /PID <PID> /F
+
+PROBLEMA: Containers não sobem
+-------------------------------
+Solução:
+    docker-compose logs
+    docker-compose down
+    docker-compose up -d --force-recreate
+
+PROBLEMA: Dados não aparecem
+-----------------------------
+Solução:
+1. Verificar se os dados foram gerados: dir datasets\
+2. Executar pipeline novamente: python src\main.py
+3. Verificar logs do MinIO
+
+PROBLEMA: Memória insuficiente
+-------------------------------
+Solução:
+1. Aumentar memória do Docker Desktop (Settings > Resources)
+2. Reduzir número de workers do Spark
+3. Processar dados em lotes menores
+
+================================================================================
+14. CONCLUSÃO
+================================================================================
+
+Este projeto implementa uma solução completa de pipeline de dados para 
+gerenciamento de estoque de loja de carros, utilizando tecnologias modernas 
+e arquitetura escalável. O sistema demonstra conceitos importantes de 
+engenharia de dados, incluindo:
+
+• Data Lake com arquitetura em camadas
+• Processamento distribuído com Spark
+• Streaming de dados com Kafka
+• Visualização de KPIs com Metabase
+• API REST para integração
+
+A arquitetura escolhida permite evolução futura para ambientes de produção, 
+com possibilidade de migração para Kubernetes, adição de Machine Learning, 
+e integração com sistemas externos.
+
+O sistema está pronto para demonstração e pode ser expandido conforme 
+necessidades específicas do negócio.
+
+================================================================================
+FIM DA DOCUMENTAÇÃO
+================================================================================
